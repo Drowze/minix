@@ -92,3 +92,6 @@ void tell_vfs(struct mproc *rmp, message *m_ptr);
 
 /* whosthere.c */
 int do_whosthere(void);
+
+/* mdc.c */
+int do_mdc(void);
