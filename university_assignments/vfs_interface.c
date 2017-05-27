@@ -16,6 +16,7 @@
 
 /* function prototypes */
 int custom_open(const char *name, int flags);
+int custom_write(int fd, const void* buffer, int nbytes);
 int check_arguments(char *argv[], int i); /* verify if argument is valid based on command */
 int check_fd(int fd); /* verify for a valid file descriptor */
 
@@ -41,6 +42,16 @@ int custom_open(const char *name, int flags) {
   return(_syscall(VFS_PROC_NR, VFS_OPEN, &m));
 }
 
+int custom_write(int fd, const void* buffer, int nbytes) {
+  message m;
+
+  memset(&m, 0, sizeof(m));
+  m.m_lc_vfs_readwrite.fd = fd;
+  m.m_lc_vfs_readwrite.len = (size_t)nbytes;
+  m.m_lc_vfs_readwrite.buf = (vir_bytes)buffer;
+  return(_syscall(VFS_PROC_NR, VFS_WRITE, &m));
+}
+
 int check_arguments(char* argv[], int i) {
   if(strcmp(argv[i], "open") == 0) {
     if(argv[i++] == NULL) {
@@ -48,6 +59,12 @@ int check_arguments(char* argv[], int i) {
       exit(-1);
     }
   }
+  if(strcmp(argv[i], "write") == 0) {
+     if(argv[i++] == NULL) {
+       fprintf(stderr, "Invalid write parameter\n");
+       exit(-1);
+     }
+   }
   return 0;
 }
 
@@ -63,6 +80,8 @@ int main(int argc, char* argv[]) {
   int i = 0;
   int fd = -1; // file descriptor initially set to -1
 
+  char* buffer = "qualquer coisinha";
+
   for(i = 0; i < argc; i++) {
     if(strcmp(argv[i], "open") == 0) {
       check_arguments(argv, i);
@@ -75,7 +94,8 @@ int main(int argc, char* argv[]) {
       printf("Implementar read\n");
     }
     else if(strcmp(argv[i], "write") == 0) {
-      printf("Implementar write\n");
+      check_fd(fd);
+      custom_write(fd, buffer, strlen(buffer));
     }
     else if(strcmp(argv[i], "close") == 0) {
       printf("Implementar close\n");
