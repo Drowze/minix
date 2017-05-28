@@ -24,6 +24,7 @@
 int custom_open(const char *name, int flags);
 int custom_write(int fd, const void* buffer, int nbytes);
 int custom_seek(int fd, int offset, int flag);
+int custom_close(int fd);
 int check_arguments(char *argv[], int i); /* verify if argument is valid based on command */
 int check_fd(int fd); /* verify for a valid file descriptor */
 
@@ -70,6 +71,15 @@ int custom_write(int fd, const void* buffer, int nbytes) {
   m.m_lc_vfs_readwrite.len = (size_t)nbytes;
   m.m_lc_vfs_readwrite.buf = (vir_bytes)buffer;
   return(_syscall(VFS_PROC_NR, VFS_WRITE, &m));
+}
+
+int custom_close(int fd) {
+  message m;
+
+  memset(&m, 0, sizeof(m));
+  m.m_lc_vfs_close.fd = fd;
+
+  return _syscall(VFS_PROC_NR, VFS_CLOSE, &m);
 }
 
 int check_arguments(char* argv[], int i) {
@@ -130,8 +140,14 @@ int main(int argc, char* argv[]) {
       custom_write(fd, argv[i], strlen(argv[i]));
     }
     else if(strcmp(argv[i], "close") == 0) {
-      printf("Implementar close\n");
+      custom_close(fd);
+      fd = -1;
     }
+  }
+
+  if(fd != -1) {
+    printf("You forgot to close the file so I am closing for you\n");
+    custom_close(fd);
   }
 
   return 0;
