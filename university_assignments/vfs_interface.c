@@ -107,24 +107,27 @@ int main(int argc, char* argv[]) {
   int i = 0;
   int fd = -1; // file descriptor initially set to -1
 
-  char* buffer = "qualquer coisinha";
-  int seek_offset = 4;
+  char* buffer = NULL;
 
   for(i = 0; i < argc; i++) {
     if(strcmp(argv[i], "open") == 0) {
       check_arguments(argv, i);
       fd = custom_open(argv[++i], OPEN_FILE_FLAGS);
+      check_fd(fd);
     }
     else if(strcmp(argv[i], "seek") == 0) {
       check_fd(fd);
-      custom_seek(fd, seek_offset, LSEEK_FLAG);
+      check_arguments(argv, i);
+      custom_seek(fd, atoi(argv[++i]), LSEEK_FLAG);
     }
     else if(strcmp(argv[i], "read") == 0) {
       printf("Implementar read\n");
     }
     else if(strcmp(argv[i], "write") == 0) {
       check_fd(fd);
-      custom_write(fd, buffer, strlen(buffer));
+      check_arguments(argv, i);
+      i += 1;
+      custom_write(fd, argv[i], strlen(argv[i]));
     }
     else if(strcmp(argv[i], "close") == 0) {
       printf("Implementar close\n");
