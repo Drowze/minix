@@ -14,9 +14,16 @@
  */
 #define OPEN_FILE_FLAGS (O_RDWR | O_CREAT)
 
+/* SEEK_SET - The file offset is set to offset bytes.
+ * SEEK_CUR - The file offset is set to its current location plus offset bytes.
+ * SEEK_END - The file offset is set to the size of the file plus offset bytes.
+ */
+#define LSEEK_FLAG SEEK_SET
+
 /* function prototypes */
 int custom_open(const char *name, int flags);
 int custom_write(int fd, const void* buffer, int nbytes);
+int custom_seek(int fd, int offset, int flag);
 int check_arguments(char *argv[], int i); /* verify if argument is valid based on command */
 int check_fd(int fd); /* verify for a valid file descriptor */
 
@@ -42,6 +49,19 @@ int custom_open(const char *name, int flags) {
   return(_syscall(VFS_PROC_NR, VFS_OPEN, &m));
 }
 
+int custom_seek(int fd, int offset, int flag) {
+  message m;
+
+  memset(&m, 0, sizeof(m));
+  m.m_lc_vfs_lseek.fd = fd;
+  m.m_lc_vfs_lseek.offset = (off_t)offset;
+  m.m_lc_vfs_lseek.whence = flag;
+  if (_syscall(VFS_PROC_NR, VFS_LSEEK, &m) < 0) {
+    return(-1);
+  }
+  return((int)m.m_vfs_lc_lseek.offset);
+}
+
 int custom_write(int fd, const void* buffer, int nbytes) {
   message m;
 
@@ -60,11 +80,18 @@ int check_arguments(char* argv[], int i) {
     }
   }
   if(strcmp(argv[i], "write") == 0) {
-     if(argv[i++] == NULL) {
-       fprintf(stderr, "Invalid write parameter\n");
-       exit(-1);
-     }
-   }
+    if(argv[i++] == NULL) {
+      fprintf(stderr, "Invalid write parameter\n");
+      exit(-1);
+    }
+  }
+  if(strcmp(argv[i], "seek") == 0) {
+    i += 1;
+    if(argv[i] == NULL) {
+      fprintf(stderr, "Invalid seek parameter.\n");
+      exit(-1);
+    }
+  }
   return 0;
 }
 
@@ -81,6 +108,7 @@ int main(int argc, char* argv[]) {
   int fd = -1; // file descriptor initially set to -1
 
   char* buffer = "qualquer coisinha";
+  int seek_offset = 4;
 
   for(i = 0; i < argc; i++) {
     if(strcmp(argv[i], "open") == 0) {
@@ -88,7 +116,8 @@ int main(int argc, char* argv[]) {
       fd = custom_open(argv[++i], OPEN_FILE_FLAGS);
     }
     else if(strcmp(argv[i], "seek") == 0) {
-      printf("Implementar seek\n");
+      check_fd(fd);
+      custom_seek(fd, seek_offset, LSEEK_FLAG);
     }
     else if(strcmp(argv[i], "read") == 0) {
       printf("Implementar read\n");
