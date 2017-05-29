@@ -20,10 +20,13 @@
  */
 #define LSEEK_FLAG SEEK_SET
 
+#define BUFFER_SIZE 50
+
 /* function prototypes */
 int custom_open(const char *name, int flags);
 int custom_write(int fd, const void* buffer, int nbytes);
 int custom_seek(int fd, int offset, int flag);
+int custom_read(int fd, void *buffer, int nbytes);
 int custom_close(int fd);
 int check_arguments(char *argv[], int i); /* verify if argument is valid based on command */
 int check_fd(int fd); /* verify for a valid file descriptor */
@@ -73,6 +76,16 @@ int custom_write(int fd, const void* buffer, int nbytes) {
   return(_syscall(VFS_PROC_NR, VFS_WRITE, &m));
 }
 
+int custom_read(int fd, void *buffer, int nbytes) {
+  message m;
+
+  memset(&m, 0, sizeof(m));
+  m.m_lc_vfs_readwrite.fd = fd;
+  m.m_lc_vfs_readwrite.len = (size_t)nbytes;
+  m.m_lc_vfs_readwrite.buf = (vir_bytes)buffer;
+  return(_syscall(VFS_PROC_NR, VFS_READ, &m));
+}
+
 int custom_close(int fd) {
   message m;
 
@@ -102,6 +115,13 @@ int check_arguments(char* argv[], int i) {
       exit(-1);
     }
   }
+  if(strcmp(argv[i], "read") == 0) {
+    i += 1;
+    if(argv[i] == NULL || atoi(argv[i]) == 0) {
+      fprintf(stderr, "Invalid read parameter: read expects a number different than zero.\n");
+      exit(-1);
+    }
+  }
   return 0;
 }
 
@@ -111,6 +131,10 @@ int check_fd(int fd) {
     exit(-1);
   }
   return 0;
+}
+
+char *initialize_buffer(int buffer_size) {
+  return (char *)malloc(buffer_size * sizeof(char));
 }
 
 int main(int argc, char* argv[]) {
@@ -131,13 +155,23 @@ int main(int argc, char* argv[]) {
       custom_seek(fd, atoi(argv[++i]), LSEEK_FLAG);
     }
     else if(strcmp(argv[i], "read") == 0) {
-      printf("Implementar read\n");
+      check_fd(fd);
+      check_arguments(argv, i);
+      buffer = initialize_buffer(BUFFER_SIZE);
+      custom_read(fd, buffer, atoi(argv[++i]));
     }
     else if(strcmp(argv[i], "write") == 0) {
       check_fd(fd);
       check_arguments(argv, i);
       i += 1;
-      custom_write(fd, argv[i], strlen(argv[i]));
+      if(buffer) {
+        custom_write(fd, buffer, atoi(argv[i]));
+        free(buffer);
+        buffer = NULL;
+      }
+      else {
+        custom_write(fd, argv[i], strlen(argv[i]));
+      }
     }
     else if(strcmp(argv[i], "close") == 0) {
       custom_close(fd);
