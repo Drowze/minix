@@ -20,8 +20,6 @@
  */
 #define LSEEK_FLAG SEEK_SET
 
-#define BUFFER_SIZE 50
-
 /* function prototypes */
 int custom_open(const char *name, int flags);
 int custom_write(int fd, const void* buffer, int nbytes);
@@ -157,8 +155,9 @@ int main(int argc, char* argv[]) {
     else if(strcmp(argv[i], "read") == 0) {
       check_fd(fd);
       check_arguments(argv, i);
-      buffer = initialize_buffer(BUFFER_SIZE);
-      custom_read(fd, buffer, atoi(argv[++i]));
+      i += 1;
+      buffer = initialize_buffer(atoi(argv[i]));
+      custom_read(fd, buffer, atoi(argv[i]));
     }
     else if(strcmp(argv[i], "write") == 0) {
       check_fd(fd);
